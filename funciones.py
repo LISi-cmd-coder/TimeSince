@@ -6,6 +6,7 @@ from kivy.uix.textinput import TextInput
 from kivy.clock import Clock
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.progressbar import ProgressBar
+from kivy.uix.gridlayout import GridLayout
 from datetime import datetime
 
 class ContadorApp(App):
@@ -52,13 +53,25 @@ class ContadorApp(App):
             actividad_label = Label(text=f"{nombre_actividad}: ", font_size='20sp', size_hint_y=None, height=40)
             self.actividades[nombre_actividad]['label'] = actividad_label
             
-            # Crear un ProgressBar para mostrar el tiempo transcurrido
-            progress_bar = ProgressBar(max=86400, size_hint_y=None, height=40)  # Maximo en segundos por un día
-            self.actividades[nombre_actividad]['progress_bar'] = progress_bar
+            # Crear una barra de progreso personalizada para mostrar los días, horas, minutos y segundos
+            barra_contenedora = BoxLayout(orientation='horizontal', size_hint_y=None, height=40)
+            self.actividades[nombre_actividad]['progress_bar'] = barra_contenedora
+            
+            # Crear las etiquetas de días, horas, minutos y segundos dentro de la barra
+            self.dias_label = Label(text="0d", size_hint_x=None, width=80)
+            self.horas_label = Label(text="0h", size_hint_x=None, width=80)
+            self.minutos_label = Label(text="0m", size_hint_x=None, width=80)
+            self.segundos_label = Label(text="0s", size_hint_x=None, width=80)
+            
+            # Añadir las etiquetas dentro de la barra
+            barra_contenedora.add_widget(self.dias_label)
+            barra_contenedora.add_widget(self.horas_label)
+            barra_contenedora.add_widget(self.minutos_label)
+            barra_contenedora.add_widget(self.segundos_label)
             
             # Agregar la etiqueta de la actividad y la barra de progreso al contenedor
             self.actividades_container.add_widget(actividad_label)
-            self.actividades_container.add_widget(progress_bar)
+            self.actividades_container.add_widget(barra_contenedora)
         
         # Limpiar el campo de entrada
         self.nombre_actividad_input.text = ""
@@ -71,24 +84,26 @@ class ContadorApp(App):
             # Calcula el tiempo transcurrido para cada actividad
             tiempo_transcurrido = ahora - datos['ultima_actividad']
             
-            # Obtiene el tiempo total de un día (86400 segundos)
-            tiempo_total_segundos = 86400  # Un día tiene 86400 segundos
-            tiempo_pasado_segundos = tiempo_transcurrido.total_seconds()
-            
-            # Calcula el porcentaje de tiempo transcurrido
-            porcentaje = tiempo_pasado_segundos / tiempo_total_segundos
-            
-            # Actualiza la barra de progreso para la actividad
-            datos['progress_bar'].value = porcentaje * datos['progress_bar'].max
-            
-            # Actualiza la etiqueta para mostrar el tiempo en formato de días, horas, minutos y segundos
+            # Divide en días, horas, minutos y segundos
             dias, resto = divmod(tiempo_transcurrido.total_seconds(), 86400)
             horas, resto = divmod(resto, 3600)
             minutos, segundos = divmod(resto, 60)
             
-            # Actualiza el texto de la actividad
-            datos['label'].text = f"{nombre_actividad}: {int(dias)}d {int(horas)}h {int(minutos)}m {int(segundos)}s"
-
+            # Actualiza las etiquetas de días, horas, minutos y segundos
+            datos['dias_label'].text = f"{int(dias)}d"
+            datos['horas_label'].text = f"{int(horas)}h"
+            datos['minutos_label'].text = f"{int(minutos)}m"
+            datos['segundos_label'].text = f"{int(segundos)}s"
+            
+            # Calcular el porcentaje total de tiempo transcurrido del día
+            tiempo_total_segundos = 86400  # Un día tiene 86400 segundos
+            tiempo_pasado_segundos = tiempo_transcurrido.total_seconds()
+            porcentaje = tiempo_pasado_segundos / tiempo_total_segundos
+            
+            # Asigna el valor al contenedor de la barra (representa el tiempo total de un día)
+            # Cada sección dentro de la barra representa días, horas, minutos y segundos.
+            datos['progress_bar'].width = (porcentaje * 320)  # Ancho total para la barra (320px como ejemplo)
+            
     def reiniciar_contador(self, nombre_actividad):
         # Reinicia el tiempo de la última actividad de la actividad específica
         self.actividades[nombre_actividad]['ultima_actividad'] = datetime.now()
